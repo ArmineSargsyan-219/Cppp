@@ -1,0 +1,104 @@
+#include <iostream>
+#include <vector>
+#include <queue>
+using namespace std;
+
+class Graph {
+public:
+    int V; 
+    vector<vector<int>> adjList;
+
+    Graph(int V) {
+        this->V = V;
+        adjList.resize(V);
+    }
+
+    void addEdge(int u, int v) {
+        adjList[u].push_back(v);
+        adjList[v].push_back(u);
+    }
+
+    vector<pair<int, int>> findSpanningTree() {
+        vector<bool> visited(V, false);
+        vector<pair<int, int>> spanningTreeEdges;
+        queue<int> q;
+
+        q.push(0);
+        visited[0] = true;
+
+        while (!q.empty()) {
+            int u = q.front();
+            q.pop();
+
+            for (int v : adjList[u]) {
+                if (!visited[v]) {
+                    visited[v] = true;
+                    spanningTreeEdges.push_back({u, v});
+                    q.push(v);
+                }
+            }
+        }
+
+        return spanningTreeEdges;
+    }
+
+    void printSpanningTree(const vector<pair<int, int>>& spanningTreeEdges) {
+        cout << "Spanning Tree Edges:" << endl;
+        for (auto edge : spanningTreeEdges) {
+            cout << edge.first << " - " << edge.second << endl;
+        }
+    }
+
+    void removeLeafNode(vector<pair<int, int>>& spanningTreeEdges) {
+        vector<int> degree(V, 0);
+        for (auto edge : spanningTreeEdges) {
+            degree[edge.first]++;
+            degree[edge.second]++;
+        }
+
+        for (auto it = spanningTreeEdges.begin(); it != spanningTreeEdges.end(); ++it) {
+            if (degree[it->second] == 1) { 
+                cout << "Removing leaf node: " << it->second << endl;
+
+                spanningTreeEdges.erase(it);
+                break;
+            } else if (degree[it->first] == 1) { 
+                cout << "Removing leaf node: " << it->first << endl;
+
+                spanningTreeEdges.erase(it);
+                break;
+            }
+        }
+    }
+};
+
+int main() {
+    int V = 6;
+    
+    Graph* g = new Graph(V);
+
+    g->addEdge(0, 1);
+    g->addEdge(0, 2);
+    g->addEdge(1, 3);
+    g->addEdge(1, 4);
+    g->addEdge(2, 5);
+
+    cout << "Initial Graph:" << endl;
+    cout << "Vertices: " << V << endl;
+    cout << "Edges: 0-1, 0-2, 1-3, 1-4, 2-5" << endl;
+
+    cout << "\nFinding a spanning tree..." << endl;
+    vector<pair<int, int>> spanningTreeEdges = g->findSpanningTree();
+
+    g->printSpanningTree(spanningTreeEdges);
+
+    cout << "\nRemoving a leaf node from the spanning tree..." << endl;
+    g->removeLeafNode(spanningTreeEdges);
+
+    cout << "\nSpanning Tree after removing a leaf node:" << endl;
+    g->printSpanningTree(spanningTreeEdges);
+
+    delete g;
+
+    return 0;
+}
