@@ -1,12 +1,45 @@
 #include <iostream>
 #include <vector>
 #include <algorithm>
+#include <unordered_set>
+
 using namespace std;
+
+class DSU {
+public:
+    vector<int> parent, size;
+
+    DSU(int n) {
+        parent.resize(n);
+        size.resize(n, 1);
+        for (int i = 0; i < n; ++i)
+            parent[i] = i;
+    }
+
+    int find(int x) {
+        if (parent[x] != x)
+            parent[x] = find(parent[x]); 
+        return parent[x];
+    }
+
+    void union_sets(int x, int y) {
+        int rootX = find(x);
+        int rootY = find(y);
+        
+        if (rootX != rootY) {
+            if (size[rootX] < size[rootY]) 
+                swap(rootX, rootY);
+            parent[rootY] = rootX;
+            size[rootX] += size[rootY];
+        }
+    }
+};
 
 class Graph {
 public:
-    int V;  
+    int V; 
     vector<vector<int>> adjList;
+    unordered_set<string> removedEdges; 
 
     Graph(int V) {
         this->V = V;
@@ -18,62 +51,74 @@ public:
         adjList[v].push_back(u);
     }
 
-    void DFS(int v, vector<bool>& visited, vector<int>& parent) {
-        visited[v] = true;
-
-        for (int neighbor : adjList[v]) {
-            if (!visited[neighbor]) {
-                parent[neighbor] = v;  
-                cout << "Edge in spanning tree: (" << v << ", " << neighbor << ")" << endl;
-                DFS(neighbor, visited, parent);
-            }
-        }
+    void removeEdge(int u, int v) {
+        removedEdges.insert(to_string(min(u, v)) + "," + to_string(max(u, v)));
     }
 
-    void printSpanningTree() {
-        vector<bool> visited(V, false);
-        vector<int> parent(V, -1); 
-
-        cout << "Spanning Tree Edges:" << endl;
-      
+    void printGraph() {
         for (int i = 0; i < V; i++) {
-            if (!visited[i]) {
-                DFS(i, visited, parent);
+            cout << "Vertex " << i << ": ";
+            for (int j = 0; j < adjList[i].size(); j++) {
+                int neighbor = adjList[i][j];
+                if (removedEdges.find(to_string(min(i, neighbor)) + "," + to_string(max(i, neighbor))) == removedEdges.end()) {
+                    cout << neighbor << " ";
+                }
             }
+            cout << endl;
         }
     }
 };
 
-int main() {
-    int rows = 50;
-    int cols = 600;
-  
-    int V = (rows + 1) * (cols + 1); 
+int maxEdgesToRemove(int rows, int cols, Graph &g) {
+    int numVertices = (rows + 1) * (cols + 1);
 
-    Graph g(V){
-    for (int i = 0; i <= rows; i++) {
-        for (int j = 0; j <= cols; j++) {
-            int currentVertex = i * (cols + 1) + j;
-            if (j < cols) {  
-                int rightVertex = currentVertex + 1;
-                g.addEdge(currentVertex, rightVertex);
-            }
-            if (i < rows) {  
-                int downVertex = currentVertex + (cols + 1);
-                g.addEdge(currentVertex, downVertex);
+    DSU dsu(numVertices);
+
+    for (int r = 0; r <= rows; ++r) {
+        for (int c = 0; c < cols; ++c) {
+            int node1 = r * (cols + 1) + c;
+            int node2 = r * (cols + 1) + c + 1;
+            g.addEdge(node1, node2);
+            if (dsu.find(node1) != dsu.find(node2)) {
+                dsu.union_sets(node1, node2);
+            } else {
+                g.removeEdge(node1, node2);
             }
         }
     }
 
-    g.printSpanningTree();
+    for (int c = 0; c <= cols; ++c) {
+        for (int r = 0; r < rows; ++r) {
+            int node1 = r * (cols + 1) + c;
+            int node2 = (r + 1) * (cols + 1) + c;
+            g.addEdge(node1, node2);
+            if (dsu.find(node1) != dsu.find(node2)) {
+                dsu.union_sets(node1, node2);
+            } else {
+                g.removeEdge(node1, node2); 
+            }
+        }
+    }
 
-    int totalEdges = 60650;
+    int numSpanningTreeEdges = numVertices - 1;
 
-    int edgesInSpanningTree = V - 1;  
+    return numSpanningTreeEdges;
+}
 
-    int maxEdgesToRemove = totalEdges - edgesInSpanningTree;
+int main() {
+    int rows = 50;
+    int cols = 600;
 
-    cout << "Maximum number of edges that can be removed: " << maxEdgesToRemove << endl;
+    int numVertices = (rows + 1) * (cols + 1);
+
+    Graph g(numVertices);
+
+    int result = maxEdgesToRemove(rows, cols, g);
+
+    cout << "Maximum number of edges that can be removed: " << result << endl;
+
+    cout << "\nGraph after removing edges:\n";
+    g.printGraph();
 
     return 0;
 }
