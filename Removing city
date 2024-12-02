@@ -1,12 +1,16 @@
 #include <iostream>
 #include <vector>
+#include <algorithm>
+#include <stdexcept>
+#include <stack>
 #include <queue>
+
 using namespace std;
 
 class Graph {
 public:
-    int V; 
-    vector<vector<int>> adjList;
+    int V;  
+    vector<vector<int>> adjList;  
 
     Graph(int V) {
         this->V = V;
@@ -14,91 +18,72 @@ public:
     }
 
     void addEdge(int u, int v) {
+        if (u < 0 || u >= V || v < 0 || v >= V) {
+            throw out_of_range("Vertex out of range");
+        }
         adjList[u].push_back(v);
         adjList[v].push_back(u);
     }
 
-    vector<pair<int, int>> findSpanningTree() {
+    void printGraph() {
+        for (int i = 0; i < V; i++) {
+            cout << "Vertex " << i << ": ";
+            for (int j = 0; j < adjList[i].size(); j++) {
+                cout << adjList[i][j] << " ";
+            }
+            cout << endl;
+        }
+    }
+
+    bool isConnectedAfterRemoving(int removeVertex) {
         vector<bool> visited(V, false);
-        vector<pair<int, int>> spanningTreeEdges;
-        queue<int> q;
+        dfs(0, visited, removeVertex);  
 
-        q.push(0);
-        visited[0] = true;
-
-        while (!q.empty()) {
-            int u = q.front();
-            q.pop();
-
-            for (int v : adjList[u]) {
-                if (!visited[v]) {
-                    visited[v] = true;
-                    spanningTreeEdges.push_back({u, v});
-                    q.push(v);
-                }
+        for (int i = 0; i < V; i++) {
+            if (i != removeVertex && !visited[i]) {
+                return false; 
             }
         }
-
-        return spanningTreeEdges;
+        return true;
     }
 
-    void printSpanningTree(const vector<pair<int, int>>& spanningTreeEdges) {
-        cout << "Spanning Tree Edges:" << endl;
-        for (auto edge : spanningTreeEdges) {
-            cout << edge.first << " - " << edge.second << endl;
-        }
-    }
-
-    void removeLeafNode(vector<pair<int, int>>& spanningTreeEdges) {
-        vector<int> degree(V, 0);
-        for (auto edge : spanningTreeEdges) {
-            degree[edge.first]++;
-            degree[edge.second]++;
-        }
-
-        for (auto it = spanningTreeEdges.begin(); it != spanningTreeEdges.end(); ++it) {
-            if (degree[it->second] == 1) { 
-                cout << "Removing leaf node: " << it->second << endl;
-
-                spanningTreeEdges.erase(it);
-                break;
-            } else if (degree[it->first] == 1) { 
-                cout << "Removing leaf node: " << it->first << endl;
-
-                spanningTreeEdges.erase(it);
-                break;
+    void dfs(int v, vector<bool>& visited, int removeVertex) {
+        visited[v] = true;
+        for (int neighbor : adjList[v]) {
+            if (neighbor != removeVertex && !visited[neighbor]) {
+                dfs(neighbor, visited, removeVertex);
             }
         }
     }
 };
 
 int main() {
-    int V = 6;
-    
-    Graph* g = new Graph(V);
+    int V = 5;  
+    int E = 4;  
 
-    g->addEdge(0, 1);
-    g->addEdge(0, 2);
-    g->addEdge(1, 3);
-    g->addEdge(1, 4);
-    g->addEdge(2, 5);
+    Graph g(V);
 
-    cout << "Initial Graph:" << endl;
-    cout << "Vertices: " << V << endl;
-    cout << "Edges: 0-1, 0-2, 1-3, 1-4, 2-5" << endl;
+    vector<pair<int, int>> edges = {
+        {0, 1},  // City 0 is connected to City 1
+        {1, 2},  // City 1 is connected to City 2
+        {2, 3},  // City 2 is connected to City 3
+        {3, 4}   // City 3 is connected to City 4
+    };
 
-    cout << "\nFinding a spanning tree..." << endl;
-    vector<pair<int, int>> spanningTreeEdges = g->findSpanningTree();
+    for (const auto& edge : edges) {
+        g.addEdge(edge.first, edge.second);
+    }
 
-    g->printSpanningTree(spanningTreeEdges);
+    cout << "Original Graph:" << endl;
+    g.printGraph();
 
-    cout << "\nRemoving a leaf node from the spanning tree..." << endl;
-    g->removeLeafNode(spanningTreeEdges);
+    int leafVertex = 4;
 
-    cout << "\nSpanning Tree after removing a leaf node:" << endl;
-    g->printSpanningTree(spanningTreeEdges);
-
-    delete g;
+    if (g.isConnectedAfterRemoving(leafVertex)) {
+        cout << "The graph remains connected after removing vertex " << leafVertex << "." << endl;
+    } else {
+        cout << "The graph becomes disconnected after removing vertex " << leafVertex << "." << endl;
+    }
 
     return 0;
 }
